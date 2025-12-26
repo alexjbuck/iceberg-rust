@@ -54,12 +54,14 @@ mod action;
 
 pub use action::*;
 mod append;
+mod rewrite;
 mod snapshot;
 mod sort_order;
 mod update_location;
 mod update_properties;
 mod update_statistics;
 mod upgrade_format_version;
+mod validator;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -71,12 +73,15 @@ use crate::spec::TableProperties;
 use crate::table::Table;
 use crate::transaction::action::BoxedTransactionAction;
 use crate::transaction::append::FastAppendAction;
+use crate::transaction::rewrite::RewriteFilesAction;
 use crate::transaction::sort_order::ReplaceSortOrderAction;
 use crate::transaction::update_location::UpdateLocationAction;
 use crate::transaction::update_properties::UpdatePropertiesAction;
 use crate::transaction::update_statistics::UpdateStatisticsAction;
 use crate::transaction::upgrade_format_version::UpgradeFormatVersionAction;
 use crate::{Catalog, Error, ErrorKind, TableCommit, TableRequirement, TableUpdate};
+
+pub use validator::{RewriteValidator, SnapshotValidator};
 
 /// Table transaction.
 #[derive(Clone)]
@@ -139,6 +144,15 @@ impl Transaction {
     /// Creates a fast append action.
     pub fn fast_append(&self) -> FastAppendAction {
         FastAppendAction::new()
+    }
+
+    /// Creates a rewrite files action for atomically replacing data files.
+    ///
+    /// This action enables operations like compaction, file format optimization,
+    /// sort order changes, and any operation that replaces existing data files
+    /// with new ones.
+    pub fn rewrite_files(&self) -> RewriteFilesAction {
+        RewriteFilesAction::new()
     }
 
     /// Creates replace sort order action.
