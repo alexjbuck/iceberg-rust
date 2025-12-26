@@ -54,6 +54,7 @@ mod action;
 
 pub use action::*;
 mod append;
+mod manage_snapshots;
 mod snapshot;
 mod sort_order;
 mod update_location;
@@ -71,6 +72,7 @@ use crate::spec::TableProperties;
 use crate::table::Table;
 use crate::transaction::action::BoxedTransactionAction;
 use crate::transaction::append::FastAppendAction;
+use crate::transaction::manage_snapshots::ManageSnapshotsAction;
 use crate::transaction::sort_order::ReplaceSortOrderAction;
 use crate::transaction::update_location::UpdateLocationAction;
 use crate::transaction::update_properties::UpdatePropertiesAction;
@@ -154,6 +156,24 @@ impl Transaction {
     /// Update the statistics of table
     pub fn update_statistics(&self) -> UpdateStatisticsAction {
         UpdateStatisticsAction::new()
+    }
+
+    /// Manage snapshot references (tags and branches).
+    ///
+    /// This action allows atomically creating, updating, and deleting snapshot references
+    /// as part of a transaction, preventing race conditions where snapshots could be expired
+    /// before references are created.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let tx = Transaction::new(&table);
+    /// let action = tx.manage_snapshots()
+    ///     .create_tag("my-checkpoint", snapshot_id);
+    /// let tx = action.apply(tx)?;
+    /// tx.commit(&catalog).await?;
+    /// ```
+    pub fn manage_snapshots(&self) -> ManageSnapshotsAction {
+        ManageSnapshotsAction::new()
     }
 
     /// Commit transaction.
